@@ -112,20 +112,29 @@ Ensure the backend **CORS** settings allow `http://localhost:3000` so the browse
 
 ## Screenshots
 
-Add images under `docs/screenshots/` (or your preferred folder) and reference them here.
+### Home
 
-| Screen | Description | File (suggested) |
-|--------|-------------|-------------------|
-| Home | Landing / hero with penguin branding | `docs/screenshots/home.png` |
-| Courses | Course grid with arctic cards | `docs/screenshots/courses.png` |
-| Course detail | Lesson list for a course | `docs/screenshots/course-detail.png` |
-| Lesson | Lesson content + code editor | `docs/screenshots/lesson.png` |
+Landing page with penguin branding and arctic styling.
 
-Example markdown once files exist:
+![Pingoo home](docs/screenshots/home.png)
 
-```markdown
+### Courses
+
+Course grid with frosted cards.
+
 ![Pingoo courses](docs/screenshots/courses.png)
-```
+
+### Course detail
+
+Lesson list for a single course.
+
+![Pingoo course detail](docs/screenshots/course-detail.png)
+
+### Lesson
+
+Lesson content with interactive code editor.
+
+![Pingoo lesson](docs/screenshots/lesson.png)
 
 ---
 
