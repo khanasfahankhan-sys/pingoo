@@ -1,8 +1,9 @@
 import CodeMirror from "@uiw/react-codemirror";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 import Shell from "../components/Shell";
+import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
 import "./Lesson.css";
 
@@ -17,6 +18,8 @@ export default function Lesson() {
   const { id } = useParams();
   const lessonId = Number(id);
 
+  const { isAuthenticated } = useAuth();
+
   const [lesson, setLesson] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -24,6 +27,10 @@ export default function Lesson() {
   const [code, setCode] = useState(
     `// Welcome to Pingoo 🐧\n// Try editing and running this locally (we’ll wire a runner next)\n\nfunction greet(name) {\n  return \`Hello, \${name}!\`;\n}\n\ngreet("Arctic Coder");\n`
   );
+
+  const [marking, setMarking] = useState(false);
+  const [completionMsg, setCompletionMsg] = useState("");
+  const [completionError, setCompletionError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -84,6 +91,56 @@ export default function Lesson() {
                   ) : null}
                 </div>
               </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              {!isAuthenticated ? (
+                <div className="rounded-2xl border border-primary/15 bg-ice px-4 py-3 text-sm text-navy/80">
+                  Log in to track your progress.{" "}
+                  <Link className="font-semibold underline decoration-primary/60" to="/login">
+                    Login
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    disabled={marking}
+                    onClick={async () => {
+                      setCompletionMsg("");
+                      setCompletionError("");
+                      setMarking(true);
+                      try {
+                        await api.post("/progress/upsert/", {
+                          lesson: lessonId,
+                          status: "completed",
+                          progress_percent: 100,
+                        });
+                        setCompletionMsg("Lesson completed! Nice work — keep the streak going. 🐧");
+                      } catch (e) {
+                        setCompletionError(
+                          e?.response?.data?.detail || "Couldn’t update progress. Please try again."
+                        );
+                      } finally {
+                        setMarking(false);
+                      }
+                    }}
+                    className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-navy shadow-frost hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {marking ? "Marking…" : "Mark as Complete"}
+                  </button>
+                  {completionMsg ? (
+                    <div className="rounded-2xl border border-primary/20 bg-white/70 px-4 py-3 text-sm text-navy">
+                      {completionMsg}
+                    </div>
+                  ) : null}
+                  {completionError ? (
+                    <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                      {completionError}
+                    </div>
+                  ) : null}
+                </>
+              )}
             </div>
 
             {lesson?.summary ? (
