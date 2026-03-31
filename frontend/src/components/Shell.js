@@ -1,5 +1,7 @@
 import { Link, NavLink } from "react-router-dom";
 
+import { useAuth } from "../context/AuthContext";
+
 const navLinkClass = ({ isActive }) =>
   [
     "rounded-full px-3 py-1 text-sm font-medium transition",
@@ -7,6 +9,8 @@ const navLinkClass = ({ isActive }) =>
   ].join(" ");
 
 export default function Shell({ children }) {
+  const { isAuthenticated, user, logout } = useAuth();
+
   return (
     <div className="min-h-[calc(100dvh-3rem)]">
       <header className="mb-8 flex items-center justify-between rounded-2xl bg-white/70 px-4 py-3 shadow-frost backdrop-blur">
@@ -24,12 +28,29 @@ export default function Shell({ children }) {
           <NavLink to="/courses" className={navLinkClass}>
             Courses
           </NavLink>
-          <NavLink to="/login" className={navLinkClass}>
-            Login
-          </NavLink>
-          <NavLink to="/signup" className={navLinkClass}>
-            Signup
-          </NavLink>
+          {isAuthenticated ? (
+            <>
+              <span className="hidden text-sm text-navy/70 sm:inline">
+                {user?.display_name || user?.username || "Penguin"}
+              </span>
+              <button
+                type="button"
+                onClick={logout}
+                className="rounded-full bg-navy px-3 py-1 text-sm font-semibold text-ice hover:bg-navy/90"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <NavLink to="/login" className={navLinkClass}>
+                Login
+              </NavLink>
+              <NavLink to="/signup" className={navLinkClass}>
+                Signup
+              </NavLink>
+            </>
+          )}
         </nav>
       </header>
 
