@@ -1,7 +1,7 @@
-import Shell from "../components/Shell";
-
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
+import Shell from "../components/Shell";
 import { api } from "../lib/api";
 
 function formatLabel(value) {
@@ -66,42 +66,61 @@ export default function Courses() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {courses.map((c) => (
-            <article
-              key={c.id ?? c.slug ?? c.title}
-              className="group relative overflow-hidden rounded-2xl border border-primary/15 bg-white/80 p-5 shadow-frost backdrop-blur transition hover:-translate-y-0.5"
-            >
-              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/15 blur-2xl" />
-              <div className="pointer-events-none absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-accent/10 blur-2xl" />
+          {courses.map((c) => {
+            const cardInner = (
+              <>
+                <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/15 blur-2xl" />
+                <div className="pointer-events-none absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-accent/10 blur-2xl" />
 
-              <div className="relative">
-                <div className="flex items-start justify-between gap-3">
-                  <h2 className="text-base font-semibold leading-snug">{c.title}</h2>
-                  <span className="shrink-0 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-semibold text-navy">
-                    {formatLabel(c.level) || "Course"}
-                  </span>
-                </div>
-
-                <p className="mt-2 line-clamp-3 text-sm text-navy/75">
-                  {c.description || "No description yet. Add one to help learners pick the right path."}
-                </p>
-
-                <div className="mt-4 flex flex-wrap items-center gap-2">
-                  {c.language ? (
-                    <span className="rounded-full border border-primary/20 bg-ice px-2.5 py-1 text-xs font-semibold text-navy">
-                      {c.language}
+                <div className="relative">
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="text-base font-semibold leading-snug text-navy">{c.title}</h2>
+                    <span className="shrink-0 rounded-full bg-primary/15 px-2.5 py-1 text-xs font-semibold text-navy">
+                      {formatLabel(c.level) || "Course"}
                     </span>
-                  ) : null}
-                  <span className="rounded-full border border-primary/20 bg-ice px-2.5 py-1 text-xs text-navy/80">
-                    Arctic mode
-                  </span>
-                  <span className="ml-auto text-sm text-navy/70">🐧</span>
+                  </div>
+
+                  <p className="mt-2 line-clamp-3 text-sm text-navy/75">
+                    {c.description || "No description yet. Add one to help learners pick the right path."}
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    {c.language ? (
+                      <span className="rounded-full border border-primary/20 bg-ice px-2.5 py-1 text-xs font-semibold text-navy">
+                        {c.language}
+                      </span>
+                    ) : null}
+                    <span className="rounded-full border border-primary/20 bg-ice px-2.5 py-1 text-xs text-navy/80">
+                      Arctic mode
+                    </span>
+                    <span className="ml-auto text-sm text-navy/70">🐧</span>
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))}
+              </>
+            );
+
+            const cardClass =
+              "group relative block overflow-hidden rounded-2xl border border-primary/15 bg-white/80 p-5 shadow-frost backdrop-blur";
+
+            if (!c.slug) {
+              return (
+                <div key={c.id ?? c.title} className={`${cardClass} cursor-not-allowed opacity-90`} title="Course needs a slug">
+                  {cardInner}
+                </div>
+              );
+            }
+
+            return (
+              <Link
+                key={c.id ?? c.slug ?? c.title}
+                to={`/courses/${encodeURIComponent(c.slug)}`}
+                className={`${cardClass} outline-none transition hover:-translate-y-0.5 hover:border-primary/25 focus-visible:ring-2 focus-visible:ring-accent`}
+              >
+                {cardInner}
+              </Link>
+            );
+          })}
         </div>
-      )}
       )}
     </Shell>
   );
