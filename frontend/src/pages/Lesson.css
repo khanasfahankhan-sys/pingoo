@@ -1,0 +1,39 @@
+#lesson-code-editor .cm-editor {
+  background: rgba(255, 255, 255, 0.85);
+  color: #0d1b2a;
+}
+
+#lesson-code-editor .cm-content {
+  caret-color: #0d1b2a;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 13.5px;
+}
+
+#lesson-code-editor .cm-gutters {
+  background: rgba(240, 248, 255, 1);
+  color: rgba(13, 27, 42, 0.55);
+  border-right: 1px solid rgba(91, 200, 245, 0.25);
+}
+
+#lesson-code-editor .cm-activeLine {
+  background: rgba(91, 200, 245, 0.1);
+}
+
+#lesson-code-editor .cm-activeLineGutter {
+  background: rgba(91, 200, 245, 0.14);
+}
+
+#lesson-code-editor .cm-scroller ::selection {
+  background: rgba(0, 212, 255, 0.25);
+}
+
+#lesson-code-editor .cm-cursor {
+  border-left-color: #00d4ff;
+}
+
+/* Focus ring */
+#lesson-code-editor .cm-editor.cm-focused {
+  outline: 2px solid rgba(0, 212, 255, 0.35);
+}
+
