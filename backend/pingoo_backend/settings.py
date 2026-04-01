@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from pathlib import Path
 
+import dj_database_url
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -26,7 +28,10 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-dev-only")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False").lower() in {"1", "true", "yes", "on"}
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+_allowed_hosts = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
+if render_host := os.environ.get("RENDER_EXTERNAL_HOSTNAME"):
+    _allowed_hosts.append(render_host)
+ALLOWED_HOSTS = sorted(set(_allowed_hosts))
 
 
 # Application definition
@@ -45,6 +50,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -55,13 +61,20 @@ MIDDLEWARE = [
 ]
 
 # CORS
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-]
-
+_cors_origins = ["http://localhost:3000"]
 if frontend_origin := os.environ.get("FRONTEND_ORIGIN"):
-    # e.g. https://your-frontend.up.railway.app
-    CORS_ALLOWED_ORIGINS.append(frontend_origin)
+    _cors_origins.append(frontend_origin)
+if cors_allowed := os.environ.get("CORS_ALLOWED_ORIGINS"):
+    # Comma-separated list
+    _cors_origins.extend([o.strip() for o in cors_allowed.split(",") if o.strip()])
+CORS_ALLOWED_ORIGINS = sorted(set(_cors_origins))
+
+_csrf_origins = []
+if frontend_origin and frontend_origin.startswith(("http://", "https://")):
+    _csrf_origins.append(frontend_origin)
+if csrf_trusted := os.environ.get("CSRF_TRUSTED_ORIGINS"):
+    _csrf_origins.extend([o.strip() for o in csrf_trusted.split(",") if o.strip()])
+CSRF_TRUSTED_ORIGINS = sorted(set(_csrf_origins))
 
 ROOT_URLCONF = 'pingoo_backend.urls'
 
@@ -92,6 +105,13 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+if database_url := os.environ.get("DATABASE_URL"):
+    DATABASES["default"] = dj_database_url.parse(
+        database_url,
+        conn_max_age=int(os.environ.get("CONN_MAX_AGE", "600")),
+        ssl_require=os.environ.get("DB_SSL_REQUIRE", "True").lower() in {"1", "true", "yes", "on"},
+    )
 
 
 # Password validation
@@ -142,3 +162,10 @@ REST_FRAMEWORK = {
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    }
+}
