@@ -1,5 +1,9 @@
 # Pingoo
 
+## 🌐 Live Demo
+- **Frontend:** https://pingoo-phi.vercel.app
+- **API:** https://pingoo.onrender.com/api/courses/
+- **GitHub:** https://github.com/khanasfahankhan-sys/pingoo
 Pingoo is a gamified, **arctic-themed** coding learning platform. Learners follow short lessons, practice in-browser, and track progress—wrapped in a frosty UI with a penguin mascot and a Mimo-inspired bite-sized flow.
 
 This repository contains a **Django REST Framework** API and a **React** single-page app that consume it.
