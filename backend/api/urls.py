@@ -6,6 +6,7 @@ from .views import (
     CourseListView,
     LessonDetailView,
     LessonListView,
+    LessonValidationView,
     LoginView,
     MeView,
     ProgressListView,
@@ -27,6 +28,7 @@ urlpatterns = [
     # Lessons
     path("lessons/", LessonListView.as_view(), name="lesson-list"),
     path("lessons/<int:id>/", LessonDetailView.as_view(), name="lesson-detail"),
+    path("lessons/<int:id>/validate/", LessonValidationView.as_view(), name="lesson-validate"),
 
     # Progress
     path("progress/", ProgressListView.as_view(), name="progress-list"),

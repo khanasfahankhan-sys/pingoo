@@ -18,6 +18,57 @@ from .serializers import (
 User = get_user_model()
 
 
+class LessonValidationView(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, lesson_id):
+        try:
+            lesson = Lesson.objects.get(id=lesson_id)
+        except Lesson.DoesNotExist:
+            return Response(
+                {"success": False, "message": "Lesson not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        code = request.data.get('code', '')
+        if not code:
+            return Response(
+                {"success": False, "message": "Code is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Check if code contains all solution keywords
+        missing_keywords = []
+        if lesson.solution_keywords:
+            for keyword in lesson.solution_keywords:
+                if keyword not in code:
+                    missing_keywords.append(keyword)
+
+        # Check if output matches expected output
+        output_match = True
+        if lesson.expected_output:
+            # For now, we'll do a simple string comparison
+            # In a real implementation, you might want to execute the code and capture output
+            output_match = lesson.expected_output in code
+
+        success = len(missing_keywords) == 0 and output_match
+        
+        if not success:
+            message_parts = []
+            if missing_keywords:
+                message_parts.append(f"Missing keywords: {', '.join(missing_keywords)}")
+            if not output_match and lesson.expected_output:
+                message_parts.append("Output does not match expected result")
+            message = "Validation failed: " + "; ".join(message_parts)
+        else:
+            message = "Validation successful!"
+
+        return Response({
+            "success": success,
+            "message": message
+        })
+
+
 class RegisterView(generics.CreateAPIView):
     permission_classes = (permissions.AllowAny,)
     serializer_class = RegisterSerializer

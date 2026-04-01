@@ -3,6 +3,12 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 
+# Import JSONField for Django 3.1+ compatibility
+try:
+    from django.db.models import JSONField
+except ImportError:
+    from django.contrib.postgres.fields import JSONField
+
 
 class User(AbstractUser):
     class Role(models.TextChoices):
@@ -74,6 +80,8 @@ class Lesson(models.Model):
     video_url = models.URLField(blank=True)
     difficulty = models.CharField(max_length=16, choices=Difficulty.choices, default=Difficulty.EASY)
     estimated_minutes = models.PositiveIntegerField(null=True, blank=True)
+    expected_output = models.TextField(blank=True)
+    solution_keywords = JSONField(default=list, blank=True)
 
     is_published = models.BooleanField(default=False)
     published_at = models.DateTimeField(null=True, blank=True)
