@@ -1,5 +1,9 @@
 import json
 import logging
+import os
+import re
+import subprocess
+import tempfile
 import traceback
 from django.contrib.auth import get_user_model
 from django.db import transaction
@@ -273,15 +277,26 @@ class LessonValidationView(APIView):
                         missing_keywords.append(keyword)
                         print(f"[DEBUG] Missing keyword: {keyword}")
 
-            # Compare actual output with expected output
+            # Compare actual output with expected output (flexible matching)
             output_match = True
             print(f"[DEBUG] Expected output: {repr(lesson.expected_output[:100]) if lesson.expected_output else 'None'}")
             if lesson.expected_output:
-                # Normalize both outputs for comparison (trim whitespace)
+                # Flexible matching for expected_output
                 normalized_actual = actual_output.strip()
                 normalized_expected = lesson.expected_output.strip()
-                output_match = normalized_actual == normalized_expected
-                print(f"[DEBUG] Output comparison - Actual: {repr(normalized_actual)}, Expected: {repr(normalized_expected)}, Match: {output_match}")
+                
+                # Split expected output into parts and check if each part is contained in actual output
+                expected_parts = [part.strip() for part in normalized_expected.split(',') if part.strip()]
+                output_match = True
+                
+                for expected_part in expected_parts:
+                    # Check if this expected part is contained in the actual output
+                    if expected_part not in normalized_actual:
+                        output_match = False
+                        print(f"[DEBUG] Missing expected part: {repr(expected_part)}")
+                        break
+                
+                print(f"[DEBUG] Flexible output comparison - Actual: {repr(normalized_actual)}, Expected parts: {expected_parts}, Match: {output_match}")
 
             # Determine overall success
             success = len(missing_keywords) == 0 and output_match

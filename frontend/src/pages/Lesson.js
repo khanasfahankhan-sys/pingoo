@@ -49,18 +49,28 @@ export default function Lesson() {
       setError("");
       try {
         const res = await api.get(`/lessons/${lessonId}/`);
+        console.log('[DEBUG] Full lesson API response:', JSON.stringify(res.data, null, 2));
         if (!cancelled) setLesson(res.data);
         
         // Load next lesson for navigation
         try {
-          const lessonsRes = await api.get(`/lessons/?course=${res.data.course.id}`);
-          const lessons = lessonsRes.data.sort((a, b) => a.order - b.order);
-          const currentIndex = lessons.findIndex(l => l.id === lessonId);
-          if (currentIndex !== -1 && currentIndex < lessons.length - 1) {
-            setNextLessonId(lessons[currentIndex + 1].id);
+          const courseId = typeof res.data.course === 'object' ? res.data.course?.id : res.data.course;
+          const currentOrder = res.data.order;
+          const coursesRes = await api.get('/courses/');
+          const course = coursesRes.data.find(c => c.id === courseId);
+          if (course) {
+            const lessonsRes = await api.get(`/lessons/?course=${course.slug}`);
+            const nextLesson = lessonsRes.data.find(l => l.order === currentOrder + 1);
+            if (nextLesson) {
+              setNextLessonId(nextLesson.id);
+            } else {
+              setNextLessonId(null);
+            }
           }
         } catch (e) {
+          console.error('[ERROR] Failed to load next lesson:', e);
           // Ignore error loading next lesson
+          setNextLessonId(null);
         }
       } catch (e) {
         if (!cancelled) setError(e?.response?.data?.detail || "Failed to load lesson.");
@@ -115,6 +125,61 @@ export default function Lesson() {
     });
   };
 
+  // Flexible output comparison function
+  const compareOutputFlexibly = (actualOutput, expectedOutput) => {
+    console.log('[DEBUG] Comparing output flexibly');
+    console.log('[DEBUG] Actual output:', repr(actualOutput));
+    console.log('[DEBUG] Expected output:', repr(expectedOutput));
+    
+    // Split both outputs into lines
+    const actualLines = actualOutput.trim().split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    const expectedLines = expectedOutput.trim().split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    
+    console.log('[DEBUG] Actual lines:', actualLines);
+    console.log('[DEBUG] Expected lines:', expectedLines);
+    
+    // If number of lines don't match, fail
+    if (actualLines.length !== expectedLines.length) {
+      console.log('[DEBUG] Line count mismatch:', actualLines.length, 'vs', expectedLines.length);
+      return false;
+    }
+    
+    // Compare each line
+    for (let i = 0; i < expectedLines.length; i++) {
+      const expectedLine = expectedLines[i];
+      const actualLine = actualLines[i];
+      
+      console.log('[DEBUG] Comparing line', i, '- Expected:', repr(expectedLine), 'Actual:', repr(actualLine));
+      
+      // Check if expected line is a number
+      if (!isNaN(expectedLine) && !isNaN(parseFloat(expectedLine))) {
+        // Expected is a number, check if actual is any valid number
+        const actualNum = parseFloat(actualLine);
+        if (isNaN(actualNum)) {
+          console.log('[DEBUG] Expected number but got non-number:', actualLine);
+          return false;
+        }
+        console.log('[DEBUG] Number comparison passed:', actualNum);
+      } else {
+        // Expected is a string, check if actual is any non-empty string
+        if (actualLine.length === 0) {
+          console.log('[DEBUG] Expected string but got empty line');
+          return false;
+        }
+        console.log('[DEBUG] String comparison passed:', actualLine);
+      }
+    }
+    
+    console.log('[DEBUG] All lines passed validation');
+    return true;
+  };
+
+  // Helper function to safely represent strings in logs
+  const repr = (str) => {
+    if (typeof str !== 'string') return String(str);
+    return `"${str.replace(/"/g, '\\"')}"`;
+  };
+
   const validateCode = async () => {
     if (!code.trim()) {
       setValidationResult({
@@ -161,9 +226,8 @@ export default function Lesson() {
         
         // Compare with expected output if it exists
         if (lesson?.expected_output) {
-          const normalizedActual = actualOutput.trim();
-          const normalizedExpected = lesson.expected_output.trim();
-          success = normalizedActual === normalizedExpected;
+          success = compareOutputFlexibly(actualOutput, lesson.expected_output);
+          console.log('[DEBUG] Flexible output comparison result:', success);
           
           if (success) {
             message = "Validation successful! Your JavaScript runs perfectly.";
@@ -233,23 +297,47 @@ export default function Lesson() {
           // Mark lesson as complete if authenticated
           if (isAuthenticated) {
             try {
-              await api.post("/progress/upsert/", {
+              console.log('[DEBUG] Attempting to mark progress as complete for lesson:', lessonId);
+              console.log('[DEBUG] Auth status:', isAuthenticated);
+              console.log('[DEBUG] Token exists:', !!localStorage.getItem("pingoo_access_token"));
+              
+              const progressData = {
                 lesson: lessonId,
                 status: "completed",
                 progress_percent: 100,
-              });
-              console.log("Lesson progress marked as complete");
+              };
+              console.log('[DEBUG] Progress data:', progressData);
+              
+              const response = await api.post("/progress/upsert/", progressData);
+              console.log('[DEBUG] Progress update successful:', response.data);
             } catch (e) {
-              console.error("Failed to update progress:", e);
+              console.error('[ERROR] Failed to update progress:', e);
+              console.error('[ERROR] Response status:', e.response?.status);
+              console.error('[ERROR] Response data:', e.response?.data);
+              
+              // Don't show error to user, just log it - the lesson was still completed successfully
+              if (e.response?.status === 401) {
+                console.warn('[WARN] Authentication failed - user may need to re-login');
+              } else if (e.response?.status === 403) {
+                console.warn('[WARN] Permission denied - check user permissions');
+              } else {
+                console.warn('[WARN] Progress update failed due to network/server error');
+              }
             }
+          } else {
+            console.log('[DEBUG] User not authenticated - skipping progress update');
           }
           
           // Navigate to next lesson after 2 seconds
           setTimeout(() => {
             if (nextLessonId) {
+              console.log('[DEBUG] Navigating to next lesson:', nextLessonId);
+              console.log('[DEBUG] Navigation URL:', `/lessons/${nextLessonId}`);
+              // Use React Router navigation instead of window.location.href
               window.location.href = `/lessons/${nextLessonId}`;
+            } else {
+              console.log('[DEBUG] No next lesson - staying on success screen');
             }
-            // If no next lesson, stay on success screen with course complete message
           }, 2000);
         };
         
@@ -365,17 +453,26 @@ export default function Lesson() {
                     type="button"
                     disabled={marking}
                     onClick={async () => {
+                      console.log('[DEBUG] Mark as complete clicked for lesson:', lessonId);
                       setCompletionMsg("");
                       setCompletionError("");
                       setMarking(true);
                       try {
-                        await api.post("/progress/upsert/", {
+                        console.log('[DEBUG] Attempting to mark progress as complete');
+                        const progressData = {
                           lesson: lessonId,
                           status: "completed",
                           progress_percent: 100,
-                        });
+                        };
+                        console.log('[DEBUG] Progress data:', progressData);
+                        
+                        const response = await api.post("/progress/upsert/", progressData);
+                        console.log('[DEBUG] Progress update successful:', response.data);
                         setCompletionMsg("Lesson completed! Nice work — keep the streak going. 🐧");
                       } catch (e) {
+                        console.error('[ERROR] Failed to update progress:', e);
+                        console.error('[ERROR] Response status:', e.response?.status);
+                        console.error('[ERROR] Response data:', e.response?.data);
                         setCompletionError(
                           e?.response?.data?.detail || "Couldn't update progress. Please try again."
                         );

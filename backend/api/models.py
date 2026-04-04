@@ -70,6 +70,11 @@ class Lesson(models.Model):
         MEDIUM = "medium", "Medium"
         HARD = "hard", "Hard"
 
+    class Language(models.TextChoices):
+        PYTHON = "python", "Python"
+        JAVASCRIPT = "javascript", "JavaScript"
+        HTML = "html", "HTML"
+
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="lessons")
     title = models.CharField(max_length=200)
     slug = models.SlugField(max_length=220)
@@ -79,6 +84,7 @@ class Lesson(models.Model):
     content = models.TextField(blank=True)
     video_url = models.URLField(blank=True)
     difficulty = models.CharField(max_length=16, choices=Difficulty.choices, default=Difficulty.EASY)
+    language = models.CharField(max_length=20, choices=Language.choices, default=Language.PYTHON)
     estimated_minutes = models.PositiveIntegerField(null=True, blank=True)
     expected_output = models.TextField(blank=True)
     solution_keywords = JSONField(default=list, blank=True)
