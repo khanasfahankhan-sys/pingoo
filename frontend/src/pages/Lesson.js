@@ -107,6 +107,7 @@ export default function Lesson() {
       
       try {
         // Execute the code
+        // eslint-disable-next-line no-new-func
         const func = new Function(code);
         func();
         
