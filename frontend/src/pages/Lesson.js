@@ -1,6 +1,7 @@
 import CodeMirror from "@uiw/react-codemirror";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
 import Shell from "../components/Shell";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../lib/api";
@@ -419,7 +420,7 @@ export default function Lesson() {
         </div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">
-          <section className="rounded-2xl border border-primary/15 bg-white/80 p-6 shadow-frost backdrop-blur">
+          <section className="rounded-2xl border border-primary/15 bg-white/80 p-6 shadow-frost backdrop-blur lg:col-span-1">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h1 className="text-2xl font-semibold tracking-tight">
@@ -506,13 +507,13 @@ export default function Lesson() {
             ) : null}
 
             <div className="prose prose-sm mt-5 max-w-none text-navy/85">
-              <div className="whitespace-pre-wrap leading-relaxed">
+              <ReactMarkdown className="leading-relaxed">
                 {lesson?.content || "No lesson content yet. Add `content` in Django admin."}
-              </div>
+              </ReactMarkdown>
             </div>
           </section>
 
-          <section className="rounded-2xl border border-primary/15 bg-white/80 p-6 shadow-frost backdrop-blur">
+          <section className="rounded-2xl border border-primary/15 bg-white/80 p-6 shadow-frost backdrop-blur lg:col-span-1">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-lg font-semibold tracking-tight">Try it</h2>
@@ -540,8 +541,28 @@ export default function Lesson() {
               />
             </div>
             
-            {/* Run button */}
-            <div className="mt-4">
+            {/* Run button - sticky on mobile */}
+            <div className="mt-4 lg:hidden">
+              <button
+                onClick={validateCode}
+                disabled={running}
+                className="w-full rounded-full bg-primary px-6 py-3 text-sm font-semibold text-navy shadow-frost hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60 transition-colors sticky bottom-4"
+              >
+                {running ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="animate-spin">⚡</span>
+                    Validating...
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    ▶️ Run Code
+                  </span>
+                )}
+              </button>
+            </div>
+            
+            {/* Run button - desktop version */}
+            <div className="mt-4 hidden lg:block">
               <button
                 onClick={validateCode}
                 disabled={running}
@@ -575,7 +596,7 @@ export default function Lesson() {
                     <div className="rounded-2xl border border-primary/20 bg-white overflow-hidden">
                       <iframe
                         srcDoc={code}
-                        className="w-full h-96 border-0"
+                        className="w-full h-64 border-0"
                         title="HTML Preview"
                         sandbox="allow-scripts"
                       />
@@ -583,8 +604,8 @@ export default function Lesson() {
                   </div>
                 )}
                 
-                {/* Output display for Python/JavaScript */}
-                {validationResult.execution_result?.output && validationResult.execution_result?.output !== 'HTML Preview Rendered' && (
+                {/* Show expected output for Python/JavaScript */}
+                {lesson?.language?.toLowerCase() !== 'html' && validationResult.execution_result?.output && (
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <div className="text-sm font-semibold text-navy">Output</div>
@@ -592,31 +613,18 @@ export default function Lesson() {
                         {validationResult.execution_result.language}
                       </div>
                     </div>
-                    <div className="rounded-2xl border border-primary/20 bg-ice p-4 text-sm font-mono text-navy">
+                    <div className="rounded-2xl border border-primary/20 bg-ice p-4 font-mono text-sm">
                       <pre className="whitespace-pre-wrap">{validationResult.execution_result.output}</pre>
                     </div>
                   </div>
                 )}
                 
-                {/* Validation result */}
-                <div className={`rounded-2xl border p-4 text-sm ${
-                  validationResult.success
-                    ? 'border-green-200 bg-green-50 text-green-800'
-                    : 'border-red-200 bg-red-50 text-red-800'
-                }`}>
-                  <div className="flex items-start gap-2">
-                    <span>{validationResult.success ? '🎉' : '❄️'}</span>
-                    <span>{validationResult.message}</span>
-                  </div>
-                </div>
-                
-                {/* Expected output comparison (only for Python/JavaScript) */}
-                {lesson?.expected_output && validationResult.execution_result && validationResult.execution_result?.output !== 'HTML Preview Rendered' && (
-                  <div className="rounded-2xl border border-primary/20 bg-ice p-4 text-sm">
-                    <div className="font-semibold text-navy mb-2">Expected Output:</div>
-                    <pre className="whitespace-pre-wrap text-navy/80">{lesson.expected_output}</pre>
-                    <div className="mt-2 text-xs text-navy/60">
-                      {validationResult.execution_result.output_match ? '✅ Output matches' : '❌ Output does not match'}
+                {/* Show expected output */}
+                {lesson?.expected_output && lesson?.language?.toLowerCase() !== 'html' && (
+                  <div>
+                    <div className="text-sm font-semibold text-navy mb-2">Expected Output</div>
+                    <div className="rounded-2xl border border-primary/20 bg-ice p-4 font-mono text-sm">
+                      <pre className="whitespace-pre-wrap">{lesson.expected_output}</pre>
                     </div>
                   </div>
                 )}
